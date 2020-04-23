@@ -3,8 +3,8 @@ var express = require('express');
 var path = require('path');
 var logger = require('morgan');
 var session = require("express-session");
-var okta = require("@okta/okta-sdk-nodejs");
-var ExpressOIDC = require("@okta/oidc-middleware").ExpressOIDC;
+var okta = require('@okta/okta-sdk-nodejs');
+var ExpressOIDC = require('@okta/oidc-middleware').ExpressOIDC;
 
 const dashboardRouter = require("./routes/dashboard");
 const publicRouter = require("./routes/public");
@@ -19,6 +19,7 @@ const oidc = new ExpressOIDC({
   issuer: 'https://dev-581505.okta.com/oauth2/default',
   client_id: '0oaa6j0v03sPCnCJ34x6',
   client_secret: 'DTdfrc5UALMXFxbS2zfhlaC0YBypVAkd84eLtOjT',
+  appBaseUrl: 'http://localhost:3000',
   redirect_uri: 'http://localhost:3000/users/callback',
   scope: "openid profile",
   routes: {
@@ -52,7 +53,7 @@ app.use((req, res, next) => {
     return next();
   }
 
-  oktaClient.getUser(req.userinfo.sub)
+  oktaClient.getUser(req.userContext.userinfo.sub)
     .then(user => {
       req.user = user;
       res.locals.user = user;
@@ -67,7 +68,7 @@ app.get('/test', (req, res) => {
 });
 
 function loginRequired(req, res, next) {
-  if (!req.user) {
+  if (!req.userContext) {
     return res.status(401).render("unauthenticated");
   }
   next();
@@ -75,7 +76,7 @@ function loginRequired(req, res, next) {
 
 app.use('/', publicRouter);
 app.use('/dashboard', loginRequired, dashboardRouter);
-app.use('/users'. usersRouter);
+app.use('/users', usersRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
